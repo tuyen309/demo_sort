@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sort Visualization</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h2>Demo Hàm Sort</h2>
+
+    <label>Thuật toán:</label>
+    <select id="method">
+        <option value="bubble">Bubble Sort</option>
+        <option value="insertion">Insertion Sort</option>
+        <option value="selection">Selection Sort</option>
+        <option value="merge">Merge Sort</option>
+        <option value="quick">Quick Sort</option>
+    </select>
+
+    <label>Tốc độ:</label>
+    <select id="speed">
+        <option value="fast">Nhanh</option>
+        <option value="slow">Chậm</option>
+    </select>
+
+    <label>Số lượng:</label>
+    <input id="count" type="range" min="5" max="50" value="8" oninput="onCountChange(this.value)">
+    <span id="countVal">8</span>
+
+    <button onclick="playSort()">Play</button>
+    <div class="chart-container"><div id="bars" class="bars"></div></div>
+    
+
+    <script>
+        let array = Array.from({length: 8}, () => Math.floor(Math.random() * 150 + 50));
+        let timer = null;
+
+        function renderBars(step) {
+            const container = document.getElementById('bars');
+            container.innerHTML = '';
+            const arr = step.arr || step; // backward compatibility if needed
+            const highlight = step.highlight || [];
+            const available = container.clientWidth || 560; // approx width without borders
+            const gap = 4;
+            const width = Math.max(6, Math.floor((available - gap * Math.max(arr.length - 1, 0)) / arr.length));
+            arr.forEach((val, idx) => {
+                const bar = document.createElement('div');
+                bar.className = 'bar' + (highlight.includes(idx) ? ' highlight' : '');
+                bar.style.height = val + 'px';
+                bar.style.width = width + 'px';
+                bar.style.fontSize = (arr.length > 20 ? '10px' : '12px');
+                bar.textContent = val;
+                container.appendChild(bar);
+            });
+        }
+
+        function onCountChange(val) {
+            document.getElementById('countVal').textContent = val;
+            const n = parseInt(val, 10);
+            array = Array.from({length: n}, () => Math.floor(Math.random() * 150 + 50));
+            if (timer) {
+                clearInterval(timer);
+                timer = null;
+            }
+            renderBars({arr: array, highlight: []});
+        }
+
+        function playSort() {
+            const method = document.getElementById('method').value;
+            const speed = document.getElementById('speed').value;
+            const delay = speed === 'fast' ? 200 : 800;
+
+            fetch('/sort', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({array, method})
+            })
+            .then(res => res.json())
+            .then(steps => {
+                let i = 0;
+                if (timer) clearInterval(timer);
+                timer = setInterval(() => {
+                    renderBars(steps[i]);
+                    i++;
+                    if (i >= steps.length) {
+                        clearInterval(timer);
+                        timer = null;
+                    }
+                }, delay);
+            });
+        }
+
+        renderBars({arr: array, highlight: []});
+    </script>
+</body>
+</html>
